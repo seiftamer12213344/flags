@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlagMaster - Spell-Forgiving Country Flag Quiz</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          },
+          animation: {
+            'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
+            'bounce-short': 'bounceShort 0.5s ease-in-out 1',
+            'pulse-subtle': 'pulseSubtle 2s infinite',
+          },
+          keyframes: {
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-2px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(4px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(6px, 0, 0)' },
+            },
+            bounceShort: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-8px)' }
+            },
+            pulseSubtle: {
+              '0%, 100%': { opacity: 1 },
+              '50%': { opacity: 0.85 }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      min-height: 100vh;
+    }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .glass-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Custom Canvas Confetti overlay */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* Flag image border glow effects */
+    .flag-container {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+
+<body class="text-slate-100 flex flex-col justify-between min-h-screen relative overflow-x-hidden selection:bg-brand-500 selection:text-white">
+  
+  <!-- Canvas for dynamic celebrations -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <header class="w-full max-w-5xl mx-auto p-4 sm:p-6 flex items-center justify-between z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+        <i class="fa-solid fa-flag text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+          FlagMaster
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Smart Spell-Tolerant Geography Quiz</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-4">
+      <!-- Game Mode Selector -->
+      <div class="glass-card px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold">
+        <button id="mode-endless-btn" onclick="setGameMode('endless')" class="px-2.5 py-1 rounded-lg transition-all duration-200 bg-brand-600 text-white shadow">
+          <i class="fa-solid fa-infinity mr-1"></i> Endless
+        </button>
+        <button id="mode-timed-btn" onclick="setGameMode('timed')" class="px-2.5 py-1 rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-stopwatch mr-1"></i> 60s Blitz
+        </button>
+      </div>
+
+      <!-- Settings button -->
+      <button onclick="openSettingsModal()" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+
+      <!-- Sound toggle -->
+      <button id="sound-toggle-btn" onclick="toggleSound()" class="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition">
+        <i class="fa-solid fa-volume-high text-brand-400" id="sound-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-4xl mx-auto px-4 py-2 flex-grow flex flex-col justify-center items-center z-10">
+    
+    <!-- Stats Bar -->
+    <div class="w-full glass-card rounded-2xl p-4 mb-6 grid grid-cols-3 sm:grid-cols-4 gap-2 text-center relative overflow-hidden">
+      <!-- Gradient border highlight -->
+      <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-500 to-transparent"></div>
+      
+      <div class="flex flex-col items-center">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Score</span>
+        <span id="score-display" class="text-2xl sm:text-3xl font-black text-white">0</span>
+      </div>
+
+      <div class="flex flex-col items-center">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Current Streak</span>
+        <div class="flex items-center gap-1">
+          <i class="fa-solid fa-fire text-amber-500 animate-pulse"></i>
+          <span id="streak-display" class="text-2xl sm:text-3xl font-black text-amber-400">0</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Best Streak</span>
+        <span id="best-streak-display" class="text-2xl sm:text-3xl font-black text-emerald-400">0</span>
+      </div>
+
+      <div id="timer-card" class="hidden sm:flex flex-col items-center justify-center border-l border-slate-700/50">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Time Remaining</span>
+        <span id="timer-display" class="text-2xl sm:text-3xl font-black text-rose-400">60s</span>
+      </div>
+    </div>
+
+    <!-- Main Game Card -->
+    <div id="game-card" class="w-full glass-card rounded-3xl p-6 sm:p-8 flex flex-col items-center shadow-2xl transition-all duration-300 relative">
+      
+      <!-- Flag Showcase Box -->
+      <div class="relative group w-full max-w-md h-52 sm:h-64 mb-6 rounded-2xl overflow-hidden flag-container bg-slate-950 flex items-center justify-center border border-slate-700/50">
+        
+        <!-- Loading Spinner -->
+        <div id="flag-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 transition-opacity duration-300">
+          <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs text-slate-400 mt-3 font-medium">Loading flag...</span>
+        </div>
+
+        <!-- Flag Image -->
+        <img id="flag-image" src="" alt="Country Flag" class="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" onload="onFlagLoaded()" onerror="onFlagError()" />
+        
+        <!-- Region Badge -->
+        <span id="region-badge" class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-slate-300 text-xs font-semibold px-3 py-1 rounded-full border border-slate-700">
+          World
+        </span>
+
+        <!-- Difficulty Indicator -->
+        <span id="difficulty-badge" class="absolute top-3 right-3 bg-brand-500/20 text-brand-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-brand-500/30">
+          Easy
+        </span>
+      </div>
+
+      <!-- Interactive Form -->
+      <form id="guess-form" onsubmit="handleGuessSubmit(event)" class="w-full max-w-md flex flex-col gap-3">
+        <div class="relative flex items-center">
+          <input 
+            type="text" 
+            id="country-input" 
+            placeholder="Type country name..." 
+            autocomplete="off"
+            spellcheck="false"
+            class="w-full glass-input text-white placeholder-slate-400 text-lg font-semibold px-5 py-4 rounded-2xl focus:outline-none transition-all pr-12"
+          />
+          <button 
+            type="button" 
+            onclick="clearInput()" 
+            id="clear-btn"
+            class="absolute right-4 text-slate-400 hover:text-white transition hidden"
+          >
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Submit & Control Buttons -->
+        <div class="grid grid-cols-12 gap-2 mt-1">
+          <button 
+            type="submit" 
+            id="submit-btn"
+            class="col-span-8 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-brand-600/30 transition duration-200 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span>Submit Guess</span>
+            <i class="fa-solid fa-paper-plane text-sm"></i>
+          </button>
+
+          <button 
+            type="button" 
+            onclick="skipCountry()" 
+            title="Skip this country"
+            class="col-span-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-semibold py-3.5 px-4 rounded-xl border border-slate-700 transition duration-200 active:scale-95 flex items-center justify-center gap-1.5"
+          >
+            <span>Skip</span>
+            <i class="fa-solid fa-forward text-xs"></i>
+          </button>
+        </div>
+      </form>
+
+      <!-- Feedback Banner -->
+      <div id="feedback-banner" class="w-full max-w-md mt-4 hidden p-4 rounded-2xl text-center text-sm font-bold transition-all duration-300 flex flex-col items-center justify-center gap-1">
+        <div id="feedback-title" class="text-base flex items-center gap-2"></div>
+        <div id="feedback-detail" class="text-xs opacity-90 font-medium"></div>
+      </div>
+
+      <!-- Hints & Clues Panel -->
+      <div class="w-full max-w-md mt-6 pt-4 border-t border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb text-amber-400"></i> Need a Hint?
+          </span>
+          <span id="hint-cost-indicator" class="text-[11px] text-slate-500">Hints are free to try!</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button 
+            type="button" 
+            onclick="revealHint('capital')" 
+            id="hint-capital-btn"
+            class="bg-slate-800/60 hover:bg-slate-800 text-slate-300 text-xs py-2.5 px-3 rounded-xl border border-slate-700/60 transition flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-city text-sky-400"></i>
+            <span>Show Capital</span>
+          </button>
+
+          <button 
+            type="button" 
+            onclick="revealHint('letter')" 
+            id="hint-letter-btn"
+            class="bg-slate-800/60 hover:bg-slate-800 text-slate-300 text-xs py-2.5 px-3 rounded-xl border border-slate-700/60 transition flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-font text-emerald-400"></i>
+            <span>First Letter</span>
+          </button>
+        </div>
+
+        <!-- Revealed Hint Box -->
+        <div id="hint-display" class="mt-3 hidden p-3 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-300 text-center animate-fade-in">
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md rounded-3xl p-6 border border-slate-700/80 shadow-2xl">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-brand-400"></i> Game Settings
+        </h3>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Region Filter -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Region Filter</label>
+        <select id="region-select" onchange="updateFilters()" class="w-full glass-input text-white rounded-xl p-3 text-sm focus:outline-none font-medium">
+          <option value="All" class="bg-slate-900">All World (200+ Countries)</option>
+          <option value="Europe" class="bg-slate-900">Europe</option>
+          <option value="Asia" class="bg-slate-900">Asia</option>
+          <option value="Africa" class="bg-slate-900">Africa</option>
+          <option value="Americas" class="bg-slate-900">Americas</option>
+          <option value="Oceania" class="bg-slate-900">Oceania</option>
+        </select>
+      </div>
+
+      <!-- Spelling Forgiveness Sensitivity -->
+      <div class="mb-5">
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Spelling Tolerance</label>
+          <span id="tolerance-label" class="text-xs text-brand-400 font-bold">Medium (Generous)</span>
+        </div>
+        <input 
+          type="range" 
+          id="tolerance-slider" 
+          min="1" 
+          max="3" 
+          value="2" 
+          onchange="updateToleranceSetting(this.value)"
+          class="w-full accent-brand-500 cursor-pointer"
+        />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+          <span>Strict</span>
+          <span>Medium</span>
+          <span>Relaxed</span>
+        </div>
+      </div>
+
+      <button onclick="closeSettingsModal()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition">
+        Save & Continue
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal (for Blitz Timed Mode) -->
+  <div id="gameover-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md rounded-3xl p-6 text-center border border-slate-700 shadow-2xl relative overflow-hidden">
+      <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+        <i class="fa-solid fa-trophy text-2xl text-white"></i>
+      </div>
+
+      <h2 class="text-2xl font-black text-white mb-1">Time's Up!</h2>
+      <p class="text-xs text-slate-400 mb-6">Here is how you performed in 60 seconds Blitz:</p>
+
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <span class="text-xs text-slate-400 font-semibold block">Final Score</span>
+          <span id="final-score" class="text-3xl font-black text-brand-400">0</span>
+        </div>
+        <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <span class="text-xs text-slate-400 font-semibold block">Max Streak</span>
+          <span id="final-streak" class="text-3xl font-black text-amber-400">0</span>
+        </div>
+      </div>
+
+      <button onclick="restartTimedGame()" class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition">
+        Play Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-4xl mx-auto p-4 text-center text-xs text-slate-500 z-10">
+    <p>FlagMaster &bull; Uses Fuzzy String Matching (Damerau-Levenshtein Algorithm) to forgive typos</p>
+  </footer>
+
+  <script>
+    /* =========================================================================
+       COUNTRY DATASET (Comprehensive dataset with codes, capitals, & aliases)
+       ========================================================================= */
+    const COUNTRIES_DATA = [
+      { code: 'us', name: 'United States', aliases: ['usa', 'united states of america', 'america', 'us'], capital: 'Washington, D.C.', region: 'Americas' },
+      { code: 'gb', name: 'United Kingdom', aliases: ['uk', 'great britain', 'britain', 'england'], capital: 'London', region: 'Europe' },
+      { code: 'ca', name: 'Canada', aliases: ['can'], capital: 'Ottawa', region: 'Americas' },
+      { code: 'fr', name: 'France', aliases: ['french republic'], capital: 'Paris', region: 'Europe' },
+      { code: 'de', name: 'Germany', aliases: ['deutschland'], capital: 'Berlin', region: 'Europe' },
+      { code: 'it', name: 'Italy', aliases: ['italia'], capital: 'Rome', region: 'Europe' },
+      { code: 'es', name: 'Spain', aliases: ['espana'], capital: 'Madrid', region: 'Europe' },
+      { code: 'jp', name: 'Japan', aliases: ['nippon', 'nihon'], capital: 'Tokyo', region: 'Asia' },
+      { code: 'cn', name: 'China', aliases: ['prc', 'people republic of china'], capital: 'Beijing', region: 'Asia' },
+      { code: 'in', name: 'India', aliases: ['bharat'], capital: 'New Delhi', region: 'Asia' },
+      { code: 'br', name: 'Brazil', aliases: ['brasil'], capital: 'Brasília', region: 'Americas' },
+      { code: 'au', name: 'Australia', aliases: ['oz'], capital: 'Canberra', region: 'Oceania' },
+      { code: 'mx', name: 'Mexico', aliases: ['mejico'], capital: 'Mexico City', region: 'Americas' },
+      { code: 'ru', name: 'Russia', aliases: ['russian federation'], capital: 'Moscow', region: 'Europe' },
+      { code: 'eg', name: 'Egypt', aliases: ['misr'], capital: 'Cairo', region: 'Africa' },
+      { code: 'ar', name: 'Argentina', aliases: [], capital: 'Buenos Aires', region: 'Americas' },
+      { code: 'za', name: 'South Africa', aliases: ['rsa'], capital: 'Pretoria', region: 'Africa' },
+      { code: 'kr', name: 'South Korea', aliases: ['korea', 'republic of korea'], capital: 'Seoul', region: 'Asia' },
+      { code: 'kp', name: 'North Korea', aliases: ['dprk'], capital: 'Pyongyang', region: 'Asia' },
+      { code: 'nl', name: 'Netherlands', aliases: ['holland'], capital: 'Amsterdam', region: 'Europe' },
+      { code: 'ch', name: 'Switzerland', aliases: ['swiss'], capital: 'Bern', region: 'Europe' },
+      { code: 'se', name: 'Sweden', aliases: [], capital: 'Stockholm', region: 'Europe' },
+      { code: 'no', name: 'Norway', aliases: [], capital: 'Oslo', region: 'Europe' },
+      { code: 'fi', name: 'Finland', aliases: ['suomi'], capital: 'Helsinki', region: 'Europe' },
+      { code: 'dk', name: 'Denmark', aliases: [], capital: 'Copenhagen', region: 'Europe' },
+      { code: 'pt', name: 'Portugal', aliases: [], capital: 'Lisbon', region: 'Europe' },
+      { code: 'gr', name: 'Greece', aliases: ['hellas'], capital: 'Athens', region: 'Europe' },
+      { code: 'tr', name: 'Turkey', aliases: ['turkiye'], capital: 'Ankara', region: 'Asia' },
+      { code: 'sa', name: 'Saudi Arabia', aliases: ['ksa'], capital: 'Riyadh', region: 'Asia' },
+      { code: 'ae', name: 'United Arab Emirates', aliases: ['uae', 'emirates'], capital: 'Abu Dhabi', region: 'Asia' },
+      { code: 'id', name: 'Indonesia', aliases: [], capital: 'Jakarta', region: 'Asia' },
+      { code: 'my', name: 'Malaysia', aliases: [], capital: 'Kuala Lumpur', region: 'Asia' },
+      { code: 'th', name: 'Thailand', aliases: ['siam'], capital: 'Bangkok', region: 'Asia' },
+      { code: 'vn', name: 'Vietnam', aliases: ['viet nam'], capital: 'Hanoi', region: 'Asia' },
+      { code: 'ph', name: 'Philippines', aliases: ['filipinas'], capital: 'Manila', region: 'Asia' },
+      { code: 'sg', name: 'Singapore', aliases: [], capital: 'Singapore', region: 'Asia' },
+      { code: 'nz', name: 'New Zealand', aliases: ['aotearoa'], capital: 'Wellington', region: 'Oceania' },
+      { code: 'ie', name: 'Ireland', aliases: ['eire'], capital: 'Dublin', region: 'Europe' },
+      { code: 'pl', name: 'Poland', aliases: ['polska'], capital: 'Warsaw', region: 'Europe' },
+      { code: 'ua', name: 'Ukraine', aliases: [], capital: 'Kyiv', region: 'Europe' },
+      { code: 'ro', name: 'Romania', aliases: [], capital: 'Bucharest', region: 'Europe' },
+      { code: 'be', name: 'Belgium', aliases: [], capital: 'Brussels', region: 'Europe' },
+      { code: 'at', name: 'Austria', aliases: ['osterreich'], capital: 'Vienna', region: 'Europe' },
+      { code: 'cl', name: 'Chile', aliases: [], capital: 'Santiago', region: 'Americas' },
+      { code: 'co', name: 'Colombia', aliases: [], capital: 'Bogotá', region: 'Americas' },
+      { code: 'pe', name: 'Peru', aliases: [], capital: 'Lima', region: 'Americas' },
+      { code: 've', name: 'Venezuela', aliases: [], capital: 'Caracas', region: 'Americas' },
+      { code: 'ng', name: 'Nigeria', aliases: [], capital: 'Abuja', region: 'Africa' },
+      { code: 'ke', name: 'Kenya', aliases: [], capital: 'Nairobi', region: 'Africa' },
+      { code: 'ma', name: 'Morocco', aliases: [], capital: 'Rabat', region: 'Africa' },
+      { code: 'dz', name: 'Algeria', aliases: [], capital: 'Algiers', region: 'Africa' },
+      { code: 'pk', name: 'Pakistan', aliases: [], capital: 'Islamabad', region: 'Asia' },
+      { code: 'bd', name: 'Bangladesh', aliases: [], capital: 'Dhaka', region: 'Asia' },
+      { code: 'ir', name: 'Iran', aliases: ['persia'], capital: 'Tehran', region: 'Asia' },
+      { code: 'iq', name: 'Iraq', aliases: [], capital: 'Baghdad', region: 'Asia' },
+      { code: 'il', name: 'Israel', aliases: [], capital: 'Jerusalem', region: 'Asia' },
+      { code: 'cz', name: 'Czechia', aliases: ['czech republic'], capital: 'Prague', region: 'Europe' },
+      { code: 'hu', name: 'Hungary', aliases: [], capital: 'Budapest', region: 'Europe' },
+      { code: 'hr', name: 'Croatia', aliases: ['hrvatska'], capital: 'Zagreb', region: 'Europe' },
+      { code: 'jm', name: 'Jamaica', aliases: [], capital: 'Kingston', region: 'Americas' },
+      { code: 'cub', code: 'cu', name: 'Cuba', aliases: [], capital: 'Havana', region: 'Americas' },
+      { code: 'is', name: 'Iceland', aliases: [], capital: 'Reykjavik', region: 'Europe' },
+      { code: 'np', name: 'Nepal', aliases: [], capital: 'Kathmandu', region: 'Asia' },
+      { code: 'lka', code: 'lk', name: 'Sri Lanka', aliases: ['ceylon'], capital: 'Sri Jayawardenepura Kotte', region: 'Asia' },
+      { code: 'qa', name: 'Qatar', aliases: [], capital: 'Doha', region: 'Asia' },
+      { code: 'ke', name: 'Kenya', aliases: [], capital: 'Nairobi', region: 'Africa' },
+      { code: 'gh', name: 'Ghana', aliases: [], capital: 'Accra', region: 'Africa' },
+      { code: 'et', name: 'Ethiopia', aliases: [], capital: 'Addis Ababa', region: 'Africa' },
+      { code: 'uy', name: 'Uruguay', aliases: [], capital: 'Montevideo', region: 'Americas' },
+      { code: 'py', name: 'Paraguay', aliases: [], capital: 'Asunción', region: 'Americas' },
+      { code: 'ec', name: 'Ecuador', aliases: [], capital: 'Quito', region: 'Americas' },
+      { code: 'cr', name: 'Costa Rica', aliases: [], capital: 'San José', region: 'Americas' },
+      { code: 'pa', name: 'Panama', aliases: [], capital: 'Panama City', region: 'Americas' },
+      { code: 'sn', name: 'Senegal', aliases: [], capital: 'Dakar', region: 'Africa' },
+      { code: 'tn', name: 'Tunisia', aliases: [], capital: 'Tunis', region: 'Africa' },
+      { code: 'tz', name: 'Tanzania', aliases: [], capital: 'Dodoma', region: 'Africa' },
+      { code: 'ug', name: 'Uganda', aliases: [], capital: 'Kampala', region: 'Africa' },
+      { code: 'zw', name: 'Zimbabwe', aliases: [], capital: 'Harare', region: 'Africa' },
+      { code: 'lu', name: 'Luxembourg', aliases: [], capital: 'Luxembourg', region: 'Europe' },
+      { code: 'mc', name: 'Monaco', aliases: [], capital: 'Monaco', region: 'Europe' },
+      { code: 'mt', name: 'Malta', aliases: [], capital: 'Valletta', region: 'Europe' },
+      { code: 'fj', name: 'Fiji', aliases: [], capital: 'Suva', region: 'Oceania' },
+      { code: 'pg', name: 'Papua New Guinea', aliases: ['png'], capital: 'Port Moresby', region: 'Oceania' }
+    ];
+
+    /* =========================================================================
+       STATE MANAGEMENT & VARIABLES
+       ========================================================================= */
+    let state = {
+      currentCountry: null,
+      score: 0,
+      streak: 0,
+      bestStreak: 0,
+      gameMode: 'endless', // 'endless' or 'timed'
+      timer: 60,
+      timerInterval: null,
+      soundEnabled: true,
+      toleranceLevel: 2, // 1: strict, 2: medium, 3: relaxed
+      selectedRegion: 'All',
+      remainingCountries: [],
+      hintRevealed: false
+    };
+
+    /* =========================================================================
+       LEVENSHTEIN FUZZY MATCHING ALGORITHM
+       ========================================================================= */
+    
+    // Compute Damerau-Levenshtein distance (accounts for insertions, deletions, substitutions & transpositions)
+    function levenshteinDistance(str1, str2) {
+      const a = str1.toLowerCase().trim();
+      const b = str2.toLowerCase().trim();
+      
+      const m = a.length;
+      const n = b.length;
+      const d = [];
+
+      for (let i = 0; i <= m; i++) d[i] = [i];
+      for (let j = 0; j <= n; j++) d[0][j] = j;
+
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          d[i][j] = Math.min(
+            d[i - 1][j] + 1,      // Deletion
+            d[i][j - 1] + 1,      // Insertion
+            d[i - 1][j - 1] + cost // Substitution
+          );
+          // Transposition check (e.g. "Germnay" -> "Germany")
+          if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+            d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
+          }
+        }
+      }
+      return d[m][n];
+    }
+
+    // Strip accents & diacritics and strip non-alphanumeric words like "Republic of"
+    function normalizeCountryString(str) {
+      return str
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents (e.g. Brasília -> Brasilia)
+        .replace(/[^a-z0-9 ]/g, "") // remove punctuation
+        .replace(/\b(the|republic of|kingdom of|federated states of|state of|islands)\b/g, "") // remove common fillers
+        .trim()
+        .replace(/\s+/g, " ");
+    }
+
+    // Evaluate fuzzy similarity between input and all accepted names for the current target
+    function evaluateFuzzyMatch(userInput, targetCountry) {
+      const cleanUser = normalizeCountryString(userInput);
+      if (!cleanUser) return { isMatch: false, distance: 99, similarity: 0 };
+
+      // Collect all potential valid names (Official name + Aliases)
+      const possibleTargets = [targetCountry.name, ...(targetCountry.aliases || [])];
+
+      let bestMatch = {
+        isMatch: false,
+        exact: false,
+        distance: 99,
+        similarity: 0,
+        matchedTarget: targetCountry.name
+      };
+
+      for (const rawTarget of possibleTargets) {
+        const cleanTarget = normalizeCountryString(rawTarget);
+        
+        // 1. Exact match check
+        if (cleanUser === cleanTarget) {
+          return { isMatch: true, exact: true, distance: 0, similarity: 1.0, matchedTarget: targetCountry.name };
+        }
+
+        const dist = levenshteinDistance(cleanUser, cleanTarget);
+        const maxLen = Math.max(cleanUser.length, cleanTarget.length);
+        const similarity = 1 - (dist / maxLen);
+
+        // Determine allowed max typos based on target length & user tolerance level
+        let allowedMaxTypos = 1;
+        if (cleanTarget.length > 5) allowedMaxTypos = 2;
+        if (cleanTarget.length > 9) allowedMaxTypos = 3;
+
+        // Apply global tolerance modifier
+        if (state.toleranceLevel === 1) allowedMaxTypos = Math.max(0, allowedMaxTypos - 1);
+        if (state.toleranceLevel === 3) allowedMaxTypos += 1;
+
+        if (dist <= allowedMaxTypos || similarity >= 0.72) {
+          if (dist < bestMatch.distance) {
+            bestMatch = {
+              isMatch: true,
+              exact: dist === 0,
+              distance: dist,
+              similarity: similarity,
+              matchedTarget: targetCountry.name
+            };
+          }
+        }
+      }
+
+      return bestMatch;
+    }
+
+    /* =========================================================================
+       WEB AUDIO SYNTHESIZER (Procedural sound effects without external audio files)
+       ========================================================================= */
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(type) {
+      if (!state.soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'correct') {
+          // Play a cheerful two-tone chord
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'close') {
+          // Play a soft pleasant harmonic tone for typo tolerance
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now); // A4
+          osc.frequency.exponentialRampToValueAtTime(554.37, now + 0.15); // C#5
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'wrong') {
+          // Low buzzing error tone
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'streak') {
+          // Fanfare chime
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.setValueAtTime(880, now + 0.1); // A5
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        }
+      } catch (e) {
+        console.warn("Audio Context error:", e);
+      }
+    }
+
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (state.soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-brand-400';
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    }
+
+    /* =========================================================================
+       CANVAS CONFETTI EFFECT
+       ========================================================================= */
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let confettiParticles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti() {
+      confettiParticles = [];
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+      for (let i = 0; i < 60; i++) {
+        confettiParticles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2 - 50,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.7) * 14,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          alpha: 1
+        });
+      }
+      requestAnimationFrame(updateConfetti);
+    }
+
+    function updateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let active = false;
+
+      confettiParticles.forEach(p => {
+        if (p.alpha > 0) {
+          active = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.3; // gravity
+          p.rotation += p.vRot;
+          p.alpha -= 0.015;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+
+      if (active) {
+        requestAnimationFrame(updateConfetti);
+      }
+    }
+
+    /* =========================================================================
+       GAME CORE LOGIC & FLOW
+       ========================================================================= */
+
+    function initGame() {
+      // Load best streak from localStorage
+      state.bestStreak = parseInt(localStorage.getItem('flagmaster_best_streak') || '0', 10);
+      document.getElementById('best-streak-display').textContent = state.bestStreak;
+
+      // Filter dataset by region
+      resetCountryPool();
+      loadNextFlag();
+
+      // Monitor text input for live clear button visibility
+      const input = document.getElementById('country-input');
+      const clearBtn = document.getElementById('clear-btn');
+      input.addEventListener('input', () => {
+        clearBtn.classList.toggle('hidden', input.value.trim() === '');
+      });
+    }
+
+    function resetCountryPool() {
+      if (state.selectedRegion === 'All') {
+        state.remainingCountries = [...COUNTRIES_DATA];
+      } else {
+        state.remainingCountries = COUNTRIES_DATA.filter(c => c.region === state.selectedRegion);
+      }
+      
+      // Shuffle array
+      for (let i = state.remainingCountries.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [state.remainingCountries[i], state.remainingCountries[j]] = [state.remainingCountries[j], state.remainingCountries[i]];
+      }
+    }
+
+    function loadNextFlag() {
+      if (state.remainingCountries.length === 0) {
+        resetCountryPool();
+      }
+
+      state.currentCountry = state.remainingCountries.pop();
+      state.hintRevealed = false;
+
+      // Hide hint display & reset state
+      document.getElementById('hint-display').classList.add('hidden');
+      document.getElementById('feedback-banner').classList.add('hidden');
+      document.getElementById('country-input').value = '';
+      document.getElementById('clear-btn').classList.add('hidden');
+      document.getElementById('country-input').focus();
+
+      // Show loading spinner
+      const loader = document.getElementById('flag-loader');
+      const flagImg = document.getElementById('flag-image');
+      loader.classList.remove('opacity-0', 'pointer-events-none');
+
+      // Set high-quality flag image from flagcdn.com (320px width PNG)
+      flagImg.src = `https://flagcdn.com/w320/${state.currentCountry.code}.png`;
+      
+      // Update info badges
+      document.getElementById('region-badge').textContent = state.currentCountry.region;
+    }
+
+    function onFlagLoaded() {
+      const loader = document.getElementById('flag-loader');
+      loader.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function onFlagError() {
+      // Fallback flag mechanism in case of network issue
+      const flagImg = document.getElementById('flag-image');
+      flagImg.src = `https://placehold.co/320x200/1e293b/ffffff?text=${encodeURIComponent(state.currentCountry.name)}`;
+      onFlagLoaded();
+    }
+
+    function handleGuessSubmit(event) {
+      event.preventDefault();
+      const inputEl = document.getElementById('country-input');
+      const userGuess = inputEl.value;
+
+      if (!userGuess || !userGuess.trim() || !state.currentCountry) return;
+
+      const evalResult = evaluateFuzzyMatch(userGuess, state.currentCountry);
+
+      if (evalResult.isMatch) {
+        // Correct or Fuzzy Tolerated Match!
+        state.score += 10;
+        state.streak += 1;
+
+        if (state.streak > state.bestStreak) {
+          state.bestStreak = state.streak;
+          localStorage.setItem('flagmaster_best_streak', state.bestStreak.toString());
+        }
+
+        updateStatsDisplays();
+
+        if (evalResult.exact) {
+          playSound('correct');
+          showFeedback('correct', `Perfect! Correct Answer: ${state.currentCountry.name}`, '100% Exact Match');
+        } else {
+          playSound('close');
+          showFeedback('close', `Close Enough! Correct: ${state.currentCountry.name}`, `Spelling tolerated (${Math.round(evalResult.similarity * 100)}% similarity)`);
+        }
+
+        if (state.streak % 5 === 0) {
+          playSound('streak');
+          triggerConfetti();
+        }
+
+        // Animate game card slightly
+        const card = document.getElementById('game-card');
+        card.classList.add('animate-bounce-short');
+        setTimeout(() => card.classList.remove('animate-bounce-short'), 500);
+
+        // Load next country after brief delay
+        setTimeout(() => {
+          loadNextFlag();
+        }, 1200);
+
+      } else {
+        // Incorrect Answer
+        state.streak = 0;
+        updateStatsDisplays();
+        playSound('wrong');
+
+        showFeedback('wrong', `Not quite right!`, `Try again or use a hint!`);
+
+        // Shake animation
+        const card = document.getElementById('game-card');
+        card.classList.add('animate-shake');
+        setTimeout(() => card.classList.remove('animate-shake'), 450);
+      }
+    }
+
+    function skipCountry() {
+      showFeedback('wrong', `Skipped!`, `That flag belonged to ${state.currentCountry.name}`);
+      state.streak = 0;
+      updateStatsDisplays();
+      
+      setTimeout(() => {
+        loadNextFlag();
+      }, 1400);
+    }
+
+    function clearInput() {
+      const input = document.getElementById('country-input');
+      input.value = '';
+      document.getElementById('clear-btn').classList.add('hidden');
+      input.focus();
+    }
+
+    function showFeedback(type, title, detail) {
+      const banner = document.getElementById('feedback-banner');
+      const titleEl = document.getElementById('feedback-title');
+      const detailEl = document.getElementById('feedback-detail');
+
+      banner.className = "w-full max-w-md mt-4 p-3.5 rounded-2xl text-center text-sm font-bold transition-all duration-300 flex flex-col items-center justify-center gap-0.5 border";
+
+      if (type === 'correct') {
+        banner.classList.add('bg-emerald-500/20', 'border-emerald-500/40', 'text-emerald-300');
+        titleEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${title}`;
+      } else if (type === 'close') {
+        banner.classList.add('bg-amber-500/20', 'border-amber-500/40', 'text-amber-300');
+        titleEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> ${title}`;
+      } else {
+        banner.classList.add('bg-rose-500/20', 'border-rose-500/40', 'text-rose-300');
+        titleEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i> ${title}`;
+      }
+
+      detailEl.textContent = detail;
+      banner.classList.remove('hidden');
+    }
+
+    function revealHint(type) {
+      if (!state.currentCountry) return;
+      const hintBox = document.getElementById('hint-display');
+      hintBox.classList.remove('hidden');
+
+      if (type === 'capital') {
+        hintBox.innerHTML = `Capital City: <span class="font-bold text-sky-400">${state.currentCountry.capital}</span>`;
+      } else if (type === 'letter') {
+        const firstLetter = state.currentCountry.name.charAt(0);
+        const nameLen = state.currentCountry.name.length;
+        hintBox.innerHTML = `Starts with letter: <span class="font-bold text-emerald-400">'${firstLetter}'</span> (${nameLen} characters long)`;
+      }
+    }
+
+    function updateStatsDisplays() {
+      document.getElementById('score-display').textContent = state.score;
+      document.getElementById('streak-display').textContent = state.streak;
+      document.getElementById('best-streak-display').textContent = state.bestStreak;
+    }
+
+    /* =========================================================================
+       GAME MODES (Endless vs 60s Blitz Timed)
+       ========================================================================= */
+
+    function setGameMode(mode) {
+      state.gameMode = mode;
+      
+      const endlessBtn = document.getElementById('mode-endless-btn');
+      const timedBtn = document.getElementById('mode-timed-btn');
+      const timerCard = document.getElementById('timer-card');
+
+      if (mode === 'endless') {
+        endlessBtn.className = "px-2.5 py-1 rounded-lg transition-all duration-200 bg-brand-600 text-white shadow";
+        timedBtn.className = "px-2.5 py-1 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+        timerCard.classList.add('hidden');
+        clearInterval(state.timerInterval);
+      } else {
+        timedBtn.className = "px-2.5 py-1 rounded-lg transition-all duration-200 bg-brand-600 text-white shadow";
+        endlessBtn.className = "px-2.5 py-1 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+        timerCard.classList.remove('hidden');
+        restartTimedGame();
+      }
+    }
+
+    function startTimer() {
+      clearInterval(state.timerInterval);
+      state.timer = 60;
+      document.getElementById('timer-display').textContent = `${state.timer}s`;
+
+      state.timerInterval = setInterval(() => {
+        state.timer -= 1;
+        document.getElementById('timer-display').textContent = `${state.timer}s`;
+
+        if (state.timer <= 0) {
+          clearInterval(state.timerInterval);
+          endTimedGame();
+        }
+      }, 1000);
+    }
+
+    function restartTimedGame() {
+      state.score = 0;
+      state.streak = 0;
+      updateStatsDisplays();
+      closeGameOverModal();
+      startTimer();
+      loadNextFlag();
+    }
+
+    function endTimedGame() {
+      document.getElementById('final-score').textContent = state.score;
+      document.getElementById('final-streak').textContent = state.bestStreak;
+      document.getElementById('gameover-modal').classList.remove('hidden');
+      triggerConfetti();
+    }
+
+    function closeGameOverModal() {
+      document.getElementById('gameover-modal').classList.add('hidden');
+    }
+
+    /* =========================================================================
+       SETTINGS & MODALS
+       ========================================================================= */
+
+    function openSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function updateFilters() {
+      state.selectedRegion = document.getElementById('region-select').value;
+      resetCountryPool();
+      loadNextFlag();
+    }
+
+    function updateToleranceSetting(val) {
+      state.toleranceLevel = parseInt(val, 10);
+      const label = document.getElementById('tolerance-label');
+      if (state.toleranceLevel === 1) {
+        label.textContent = "Strict (Few Typos)";
+        label.className = "text-xs text-emerald-400 font-bold";
+      } else if (state.toleranceLevel === 2) {
+        label.textContent = "Medium (Generous)";
+        label.className = "text-xs text-brand-400 font-bold";
+      } else {
+        label.textContent = "Relaxed (Very Forgiving)";
+        label.className = "text-xs text-amber-400 font-bold";
+      }
+    }
+
+    // Initialize application on load
+    window.onload = function() {
+      initGame();
+    };
+  </script>
+</body>
+</html>
